@@ -1,0 +1,153 @@
+<body>
+    <div id="map" style="width: 100%; height: 100%;"></div>
+</body>
+
+<style>
+    #map {
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        position: relative;
+    }
+
+    #videoElement {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000a;
+        display: none;
+    }
+
+    #close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgb(151, 19, 19);
+        color: #fffc;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    #time {
+        position: absolute;
+        top: 10px;
+        left: 50vw;
+        color: #0f1;
+        background-color: black;
+        padding: 5px;
+    }
+
+    #floor-choose {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+</style>
+
+<script src="https://bilibili.github.io/flv.js/dist/flv.js"></script>
+<video id="videoElement" controls></video>
+<button id="close" onclick="play_vid(null);">Close</button>
+<h2 id="time">TIME</h2>
+<div id="floor-choose">
+    <button onclick="render('F1')">F1</button>
+    <button onclick="render('F2')">F2</button>
+</div>
+<script>
+    // auto refresh time
+    setInterval(() => {
+        var date = new Date();
+        var time = date.toLocaleTimeString();
+        document.getElementById("time").innerHTML = time;
+    }, 1000);
+
+    function play_vid(url) {
+        var videoElement = document.getElementById('videoElement');
+        if (url == null) {
+            window.flvPlayer.unload();
+            window.flvPlayer.detachMediaElement();
+            window.flvPlayer.destroy();
+            videoElement.style.display = "none";
+            return;
+        }
+        else {
+            videoElement.style.display = "block";
+        }
+        if (flvjs.isSupported()) {
+            var flvPlayer = flvjs.createPlayer({
+                type: 'flv',
+                url: url
+            });
+            flvPlayer.attachMediaElement(videoElement);
+            flvPlayer.load();
+            flvPlayer.play();
+            window.flvPlayer = flvPlayer;
+        }
+    }
+</script>
+
+<script>
+    h = map.offsetHeight;
+    w = map.offsetWidth;
+
+    a = Math.min(h, w);
+    dx = (w - a) / 2;
+    dy = (h - a) / 2;
+
+
+    let tag = {
+        "Camera": {
+            x: 0.5,
+            y: 0.27,
+            color: "rgb(9 215 23)",
+            pos: "F2",
+            event: function () {
+                if (window.cam_play_url) {
+                    play_vid(window.cam_play_url);
+                } else {
+                    var url = "https://njiofsjfw9f2.berniehg.top/homemgr/cam-live";
+                    fetch(url, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                    }).then((data) => {
+                        return data.text();
+                    }).then((data) => {
+                        window.cam_play_url = data;
+                        play_vid(data);
+                    }).catch((error) => {
+                        console.error('Error:', error);
+                    });
+                }
+            }
+        }
+    };
+
+
+    function render(floor) {
+        map.style.backgroundImage = `url('./assets/maps/${floor}.jpg')`;
+
+        for (let key in tag) {
+            if (tag[key].pos != floor) {
+                continue;
+            }
+            let div = document.createElement("div");
+            div.style.position = "absolute";
+            div.style.width = "20px";
+            div.style.height = "20px";
+            div.style.borderRadius = "50%";
+            div.style.backgroundColor = tag[key].color;
+            div.style.left = (tag[key].x * a + dx - 10) + "px";
+            div.style.top = (tag[key].y * a + dy - 10) + "px";
+            map.appendChild(div);
+            div.onclick = tag[key].event;
+        }
+    }
+
+    render("F2");
+</script>
